@@ -11,7 +11,7 @@ from lxml import etree
 import urllib.parse as parse
 from urllib.request import urlretrieve
 import UI_of_Spider
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool
 
 # hyper parameter
 WAIT_TIME = 5
@@ -36,14 +36,14 @@ def rank_info_qidian_url(ui_test=False, dialog=None):
 
     else:
         dialog.rank_label.setText(dialog.tr('Data loaded successfully ! '))
-        dialog.content_list1.clear()
-        dialog.content_list2.clear()
-        dialog.content_list3.clear()
-        dialog.content_list4.clear()
-        dialog.content_list5.clear()
-        dialog.content_list6.clear()
+        dialog.rank_book_name_list.clear()
+        dialog.rank_author_list.clear()
+        dialog.rank_genre_list.clear()
+        dialog.rank_status_list.clear()
+        dialog.rank_intro_list.clear()
+        dialog.rank_newest_chapter_list.clear()
 
-        dialog.content_list1.addItems(name_list)
+        dialog.rank_book_name_list.addItems(name_list)
         dialog.rank_label.setText(dialog.tr('waiting selection ! '))
     return name_list, rank_list
 
@@ -59,45 +59,52 @@ def qidian_content_rank(rank_list, ui_test=False, dialog=None):
 
     response_temp.encoding = 'utf-8'
     data = etree.HTML(response_temp.text)
-    info_book_name_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h4//text()')
-    info_book_url_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h4//@href')
+    info_book_name_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//text()')
+    info_book_url_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//@href')
     info_book_content_list = data.xpath('//p[@class="intro"]//text()')
-    info_author = data.xpath('//p[@class="author"]//a//text()')
+    info_author = data.xpath('//p[@class="author"]//a[@class="name"]//text()')
     info_status = data.xpath('//p[@class="author"]//span//text()')
+    info_genre = data.xpath('//p[@class="author"]//a//text()')
     info_update_chapter_name = data.xpath('//p[@class="update"]/a/text()')
     info_update_url = data.xpath('//p[@class="update"]/a/@href')
     info_author_url = data.xpath('//p[@class="author"]//a[@class="name"]/@href')
     info_genre_urls = data.xpath('//p[@class="author"]/a/@href')
 
-    # clean data
-    info_author_name, info_genre, info_genre_url = [], [], []
-    for i in range(len(info_author)):
-        if i % 2 == 0:
-            info_genre.append(info_author[i])
-        else:
-            info_genre_url.append(info_genre_urls[i])
-            info_author_name.append(info_author[i])
+    # info showing from spider
+    print(f'info_book_name_list: {info_book_name_list[0]}')
+    print(f'info_book_url_list: {info_book_url_list[0]}')
+    print(f'info_book_content_list: {info_book_content_list[0]}')
+    print(f'info_author: {info_author[0]}')
+    print(f'info_status: {info_status[0]}')
+    print(f'info_update_chapter_name: {info_update_chapter_name[0]}')
+    print(f'info_update_url: {info_update_url[0]}')
+    print(f'info_author_url: {info_author_url[0]}')
+    print(f'info_genre_urls: {info_genre_urls[0]}')
 
-    for i in range(len(info_status)):
+    # clean data
+    info_genre_url_list, info_genre_list = [], []
+    for i in range(len(info_genre_urls)):
+        if i % 3 == 1:
+            info_genre_url_list.append(info_genre_urls[i])
+            info_genre_list.append(info_genre[i])
+
+    for i in range(len(info_author)):
         info_update_url[i] = 'https:' + info_update_url[i]
-        info_genre_url[i] = 'https:' + info_genre_url[i]
+        info_genre_url_list[i] = 'https:' + info_genre_url_list[i]
         info_book_url_list[i] = 'https:' + info_book_url_list[i]
         info_author_url[i] = 'https:' + info_author_url[i]
-        temp = info_book_content_list[i].split(' ')[56]
-        temp = temp.split('\r')[0]
-        info_book_content_list[i] = temp
 
     dic_info = {
         'book_name': info_book_name_list,
         'url': info_book_url_list,
         'intro': info_book_content_list,
-        'author': info_author_name,
-        'genre': info_genre,
+        'author': info_author,
+        'genre': info_genre_list,
         'status': info_status,
         'update_chapter': info_update_chapter_name,
         'update_url': info_update_url,
         'author_url': info_author_url,
-        'genre_url': info_genre_url
+        'genre_url': info_genre_url_list
     }
 
     if not ui_test:
@@ -105,18 +112,18 @@ def qidian_content_rank(rank_list, ui_test=False, dialog=None):
         print(dic_info)
         pass
     else:
-        dialog.content_list1.clear()
-        dialog.content_list1.addItems(info_book_name_list)
-        dialog.content_list2.clear()
-        dialog.content_list2.addItems(info_author_name)
-        dialog.content_list3.clear()
-        dialog.content_list3.addItems(info_genre)
-        dialog.content_list4.clear()
-        dialog.content_list4.addItems(info_status)
-        dialog.content_list5.clear()
-        dialog.content_list5.addItems(info_book_content_list)
-        dialog.content_list6.clear()
-        dialog.content_list6.addItems(info_update_chapter_name)
+        dialog.rank_book_name_list.clear()
+        dialog.rank_book_name_list.addItems(info_book_name_list)
+        dialog.rank_author_list.clear()
+        dialog.rank_author_list.addItems(info_author)
+        dialog.rank_genre_list.clear()
+        dialog.rank_genre_list.addItems(info_genre_list)
+        dialog.rank_status_list.clear()
+        dialog.rank_status_list.addItems(info_status)
+        dialog.rank_intro_list.clear()
+        dialog.rank_intro_list.addItems(info_book_content_list)
+        dialog.rank_newest_chapter_list.clear()
+        dialog.rank_newest_chapter_list.addItems(info_update_chapter_name)
     return dic_info
 
 
@@ -398,9 +405,11 @@ class novel_spider:
 
         except Exception as e:
             print('\n')
+            print('Error Message in download spider')
             print(e)
             logging.warning(traceback.format_exc())
-            self.spider_running()
+            print('save the error message into log file.')
+            # self.spider_running()
 
     def novel_download(self):
         try:
@@ -453,17 +462,21 @@ class novel_spider:
                     f.write(chapter + '\n')
                     f.flush()
 
-            pool = ThreadPoolExecutor(4)
-            self.next_chapter_links = []
-            for chapter_link in self.chapter_links:
-                if chapter_link not in self.exit_content:
-                    pool.submit(self.get_content_chapters, chapter_link)
-            # for next page
-            for chapter_link in self.next_chapter_links:
-                if chapter_link not in self.chapter_links:
-                    if chapter_link not in self.exit_content:
-                        pool.submit(self.get_content_chapters, chapter_link)
-            pool.shutdown()
+            # acceleration
+            # pool = ThreadPoolExecutor(4)
+            # self.next_chapter_links = []
+            # for chapter_link in self.chapter_links:
+            #     if chapter_link not in self.exit_content:
+            #         pool.submit(self.get_content_chapters, chapter_link)
+            # # for next page
+            # for chapter_link in self.next_chapter_links:
+            #     if chapter_link not in self.chapter_links:
+            #         if chapter_link not in self.exit_content:
+            #             pool.submit(self.get_content_chapters, chapter_link)
+            # pool.shutdown()
+
+            with Pool(4) as pool:
+                pool.starmap(self.get_content_chapters, zip(self.chapter_links))
 
             if os.path.exists(self.status_path):
                 os.remove(self.status_path)
@@ -524,12 +537,12 @@ class novel_spider:
                                          format(100 * (exit_number - 2) / len(self.chapter_links), '.2f'), title),
                   end='')
         else:
-            self.dialog.progressbar.setValue(100 * exit_number / len(self.chapter_links+self.next_chapter_links))
+            # self.dialog.progressbar.setValue(100 * exit_number / len(self.chapter_links+self.next_chapter_links))
             self.dialog.state_label.setText(self.dialog.tr('\r{}\t{}%\t{}').format(self.bookname, format(
                 100 * (exit_number - 2) / len(self.chapter_links), '.2f'), title))
 
 
 if __name__ == '__main__':
     book_name = '斗罗大陆'
-    first = novel_spider(bookname=book_name, source='changyeyuhuo')
+    first = novel_spider(bookname=book_name, source='luoxia')
     first.spider_running()
