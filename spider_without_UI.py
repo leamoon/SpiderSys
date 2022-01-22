@@ -237,7 +237,7 @@ user_agent = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
 ]
 header = {"User-Agent": random.choice(user_agent)}
-HOSTS = ['http://www.biquges.com', 'https://www.changyeyuhuo.com']
+HOSTS = ['https://www.mayiwxw.com/', 'https://www.changyeyuhuo.com']
 
 
 class novel_spider:
@@ -268,7 +268,7 @@ class novel_spider:
             "/535.24"
         ]
         self.header = {"User-Agent": random.choice(self.user_agent)}
-        self.HOSTS = ['http://www.biquges.com', 'https://www.changyeyuhuo.com']
+        self.HOSTS = HOSTS
         self.no_result = False
 
         # init None parameters
@@ -290,8 +290,8 @@ class novel_spider:
     def init_parameter(self):
         if self.source == 'biquge':
             self.host = self.HOSTS[0]
-            self.search_url = 'http://www.mayiwxw.com/modules/article/search.php'
-            self.data_form = {'searchkey': self.book_name_search}
+            self.search_url = 'https://www.mayiwxw.com/modules/article/search.php'
+            self.data_form = {'searchkey': '11', 'searchtype': 'articlename'}
             self.result_url_search_analyze = '//*[@class="odd"]//a/@href'
             self.result_title_search_analyze = '//*[@class="odd"]//a/text()'
             self.bookname_analyze = '//*[@id="info"]/h1/text()'
@@ -338,9 +338,10 @@ class novel_spider:
 
     def search_novel(self):
         try:
-            res_search = requests.post(url=self.search_url, data=self.data_form, headers=self.header, timeout=5)
+            res_search = requests.post(url=self.search_url, data=self.data_form, timeout=10)
             res_search.encoding = 'utf-8'
             temp1 = etree.HTML(res_search.text)
+            print(res_search.text)
             self.result_url_search = temp1.xpath(self.result_url_search_analyze)
             self.result_title_search = temp1.xpath(self.result_title_search_analyze)
 
@@ -397,7 +398,7 @@ class novel_spider:
                     response.encoding = 'utf-8'
                     data_response = etree.HTML(response.text)
                     for link in data_response.xpath(self.chapter_links_analyze)[12:]:
-                        chapter_links.append(self.host + link)
+                        chapter_links.append(link)
                 self.chapter_links = chapter_links
 
             # clean the space string
@@ -493,7 +494,7 @@ class novel_spider:
             print('\n')
             print(e)
             logging.warning(traceback.format_exc())
-            self.spider_running()
+            # self.spider_running()
 
     def get_content_chapters(self, chapter_link):
 
@@ -543,6 +544,8 @@ class novel_spider:
 
 
 if __name__ == '__main__':
-    book_name = '斗罗大陆'
-    first = novel_spider(bookname=book_name, source='luoxia')
-    first.spider_running()
+    # book_name = '11'
+    # first = novel_spider(bookname=book_name, source='changyeyuhuo')
+    # first.spider_running()
+    url_list, music_name = qq_music_search()
+    qq_music_download(music_name, url_list)

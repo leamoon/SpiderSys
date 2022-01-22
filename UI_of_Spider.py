@@ -3,9 +3,11 @@ from calendar import c
 import sys
 import os
 import linecache
+from urllib.error import HTTPError
 from PySide2.QtCore import QUrl, QThread
 from PySide2.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PySide2.QtGui import QTextCursor, QGuiApplication, QDesktopServices
+from sphinx import path
 import spider_UI_layout
 import re
 import json
@@ -18,10 +20,11 @@ from lxml import etree
 import urllib.parse as parse
 from urllib.request import urlretrieve
 from multiprocessing import Pool
+import numpy as np
 
 
 # hyper parameters
-novel_save_path = './Novels' # default novel saved path
+novel_save_path = './Novels'  # default novel saved path
 WAIT_TIME = 5
 logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S',
@@ -46,12 +49,14 @@ user_agent = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24",
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
 ]
-HOSTS = ['http://www.biquges.com', 'https://www.changyeyuhuo.com']
+HOSTS = ['https://www.mayiwxw.com/', 'https://www.changyeyuhuo.com']
 header = {"User-Agent": random.choice(user_agent)}
+
 
 def rank_info_qidian_url(ui_test=False, dialog=None):
     # get the rank information
-    request_content = requests.get(url='https://www.qidian.com/rank', headers=header, timeout=5)
+    request_content = requests.get(
+        url='https://www.qidian.com/rank', headers=header, timeout=5)
     request_content.encoding = 'utf-8'
 
     data = etree.HTML(request_content.text)
@@ -84,21 +89,26 @@ def qidian_content_rank(rank_list, ui_test=False, dialog=None):
     if not ui_test:
         num = input('input the index: ')
         num = int(num)
-        response_temp = requests.get(url=rank_list[num], headers=header, timeout=5)
+        response_temp = requests.get(
+            url=rank_list[num], headers=header, timeout=5)
     else:
-        response_temp = requests.get(url=dialog.rank_url, headers=header, timeout=5)
+        response_temp = requests.get(
+            url=dialog.rank_url, headers=header, timeout=5)
 
     response_temp.encoding = 'utf-8'
     data = etree.HTML(response_temp.text)
-    info_book_name_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//text()')
-    info_book_url_list = data.xpath('//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//@href')
+    info_book_name_list = data.xpath(
+        '//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//text()')
+    info_book_url_list = data.xpath(
+        '//div[@class="book-img-text"]//div[@class="book-mid-info"]/h2//@href')
     info_book_content_list = data.xpath('//p[@class="intro"]//text()')
     info_author = data.xpath('//p[@class="author"]//a[@class="name"]//text()')
     info_status = data.xpath('//p[@class="author"]//span//text()')
     info_genre = data.xpath('//p[@class="author"]//a//text()')
     info_update_chapter_name = data.xpath('//p[@class="update"]/a/text()')
     info_update_url = data.xpath('//p[@class="update"]/a/@href')
-    info_author_url = data.xpath('//p[@class="author"]//a[@class="name"]/@href')
+    info_author_url = data.xpath(
+        '//p[@class="author"]//a[@class="name"]/@href')
     info_genre_urls = data.xpath('//p[@class="author"]/a/@href')
 
     # info showing from spider
@@ -158,7 +168,7 @@ def qidian_content_rank(rank_list, ui_test=False, dialog=None):
     return dic_info
 
 
-def qq_music_search(ui_test=False, dialog=None, key_word=None):
+def qq_music_search(ui_test=True, dialog=None, key_word=None):
     # setting log config
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
@@ -171,7 +181,8 @@ def qq_music_search(ui_test=False, dialog=None, key_word=None):
         w_coding = parse.urlencode({'w': input('输入歌名:')})
     else:
         w_coding = parse.urlencode({'w': str(key_word)})
-        dialog.status_music_label.setText(dialog.tr('finding content list ...'))
+        dialog.status_music_label.setText(
+            dialog.tr('finding content list ...'))
         dialog.music_listWidget.clear()
 
     url = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace' \
@@ -196,18 +207,21 @@ def qq_music_search(ui_test=False, dialog=None, key_word=None):
     music_name = []
 
     for i in range(len(song_list)):
-        music_name.append(song_list[i]['name'] + '-' + song_list[i]['singer'][0]['name'])
+        music_name.append(song_list[i]['name'] +
+                          '-' + song_list[i]['singer'][0]['name'])
         url_list.append(str_3 % (song_list[i]['mid']))
 
         if not ui_test:
-            print('{}.{}-{}'.format(i + 1, song_list[i]['name'], song_list[i]['singer'][0]['name']))
+            print('{}.{}-{}'.format(i + 1,
+                  song_list[i]['name'], song_list[i]['singer'][0]['name']))
         else:
-            dialog.music_listWidget.addItem('{}-{}'.format(song_list[i]['name'], song_list[i]['singer'][0]['name']))
+            dialog.music_listWidget.addItem(
+                '{}-{}'.format(song_list[i]['name'], song_list[i]['singer'][0]['name']))
 
     return url_list, music_name
 
 
-def qq_music_download(music_name, url_list, ui_test=False, dialog=None):
+def qq_music_download(music_name, url_list, ui_test=True, dialog=None):
     if not ui_test:
         song_index = int(input('请输入你想下载的音乐序号:'))
         song_index -= 1
@@ -227,7 +241,8 @@ def qq_music_download(music_name, url_list, ui_test=False, dialog=None):
     if not ui_test:
         try:
             print('开始下载...')
-            urlretrieve(url=download_url, filename='./QQMusic/{}.mp3'.format(music_name[song_index]))
+            urlretrieve(
+                url=download_url, filename='./QQMusic/{}.mp3'.format(music_name[song_index]))
             print('{}.mp3下载完成！'.format(music_name[song_index]))
         except Exception as e:
             print(e, '对不起，你没有该歌曲的版权！')
@@ -236,10 +251,13 @@ def qq_music_download(music_name, url_list, ui_test=False, dialog=None):
     else:
         try:
             dialog.status_music_label.setText(dialog.tr('start downloading !'))
-            urlretrieve(url=download_url, filename='./QQMusic/{}.mp3'.format(music_name[song_index]))
-            dialog.status_music_label.setText(dialog.tr('{}.mp3 download successfully！'.format(music_name[song_index])))
+            urlretrieve(
+                url=download_url, filename='./QQMusic/{}.mp3'.format(music_name[song_index]))
+            dialog.status_music_label.setText(
+                dialog.tr('{}.mp3 download successfully！'.format(music_name[song_index])))
         except Exception as e:
-            dialog.status_music_label.setText(dialog.tr('cannot download for the permission'))
+            dialog.status_music_label.setText(
+                dialog.tr('cannot download for the permission'))
             print(e, '对不起，你没有该歌曲的版权！')
             logging.warning(traceback.format_exc())
 
@@ -253,7 +271,7 @@ class novel_spider:
         self.dialog = dialog
         self.user_agent = user_agent
         self.header = {"User-Agent": random.choice(self.user_agent)}
-        self.HOSTS = ['http://www.biquges.com', 'https://www.changyeyuhuo.com']
+        self.HOSTS = ['https://www.mayiwxw.com/', 'https://www.changyeyuhuo.com']
         self.no_result = False
 
         # init None parameters
@@ -263,11 +281,12 @@ class novel_spider:
         self.chapter_links, self.bookname = None, None
         self.result_title_search_analyze = None
         self.bookname_analyze, self.chapter_links_analyze = None, None
-        self.subfolder, self.menu_save_path, self.status_path = None, None, None
+        self.single_novel_folder, self.menu_save_path = None, None
         self.exit_content, self.next_chapter_links = [], []
         self.chapter_title_analyze, self.chapter_content_analyze = None, None
         self.page_analyze = None
         self.next_chapter_analyze = None
+        self.downloaded_links = []
 
         # initial parameters
         self.init_parameter()
@@ -275,8 +294,8 @@ class novel_spider:
     def init_parameter(self):
         if self.source == 'biquge':
             self.host = self.HOSTS[0]
-            self.search_url = 'http://www.mayiwxw.com/modules/article/search.php'
-            self.data_form = {'searchkey': self.book_name_search}
+            self.search_url = 'https://www.mayiwxw.com/modules/article/search.php'
+            self.data_form = {'searchkey': self.book_name_search, 'searchtype': 'articlename'}
             self.result_url_search_analyze = '//*[@class="odd"]//a/@href'
             self.result_title_search_analyze = '//*[@class="odd"]//a/text()'
             self.bookname_analyze = '//*[@id="info"]/h1/text()'
@@ -348,7 +367,8 @@ class novel_spider:
     def novel_chapters_loading(self):
         print('novel_chapters_loading is executed .')
         try:
-            response = requests.get(self.book_search_url, headers=self.header, timeout=WAIT_TIME)
+            response = requests.get(
+                self.book_search_url, headers=self.header, timeout=WAIT_TIME)
             response.encoding = 'utf-8'
             data_response = etree.HTML(response.text)
             self.bookname = data_response.xpath(self.bookname_analyze)[0]
@@ -359,7 +379,8 @@ class novel_spider:
                 chapter_links_back = data_response.xpath(self.chapter_links_analyze[1])
                 self.chapter_links = chapter_links_back + self.chapter_links
             elif self.source == 'biquge':
-                self.chapter_links = data_response.xpath(self.chapter_links_analyze)
+                self.chapter_links = data_response.xpath(
+                    self.chapter_links_analyze)
                 chapter_links = []
                 for link in self.chapter_links[9:]:
                     chapter_links.append(self.host + link)
@@ -368,15 +389,27 @@ class novel_spider:
                 whole_book_page = data_response.xpath(self.page_analyze)
                 chapter_links = []
                 for index_page in whole_book_page:
-                    response = requests.get(url=index_page, headers=self.header, timeout=5)
+                    response = requests.get(
+                        url=index_page, headers=self.header, timeout=5)
                     response.encoding = 'utf-8'
                     data_response = etree.HTML(response.text)
                     for link in data_response.xpath(self.chapter_links_analyze)[12:]:
-                        chapter_links.append(self.host + link)
+                        chapter_links.append(link)
                 self.chapter_links = chapter_links
 
             # clean the space string
             self.bookname = self.bookname.split(' ')[0]
+
+            # prepare for a initial json file
+            self.json_data = {
+                'book_name': f'{self.bookname}',
+                'author': '',
+                'status': 'downloading',
+                'chapter_names': [],
+                'chapter_links': self.chapter_links,
+                'downloaded_links': [],
+                'source': self.source
+            }
 
         except Exception as e:
             print('\n')
@@ -387,76 +420,68 @@ class novel_spider:
 
     def novel_download(self):
         print('novel_download is executed.')
-        try:
-            # setting the sub path
-            self.subfolder = os.path.join(novel_save_path, self.bookname)
-            self.status_path = os.path.join(self.subfolder, 'wait_for_download')
+        # setting the sub path
+        self.single_novel_folder = os.path.join(novel_save_path, self.bookname)
+        if not os.path.exists(self.single_novel_folder):
+            self.dialog.state_label.setText(
+                self.dialog.tr('Creating the download folder!'))
+            os.mkdir(self.single_novel_folder)
+        else:
+            self.dialog.state_label.setText(
+                self.dialog.tr('Loading the exit folder!'))
 
-            if not os.path.exists(self.subfolder):
-                os.makedirs(self.subfolder)
-                file = open(self.status_path, 'w')
-                file.close()
+        # json file (to indicate the statue of novels)
+        self.status_novel_json_path = os.path.join(
+            self.single_novel_folder, f'{self.bookname}_status.json')
+        # loading datas from json file
+        if os.path.exists(self.status_novel_json_path):
+            with open(f'{self.status_novel_json_path}', 'r') as f:
+                self.json_data = json.load(f)
+                self.downloaded_links = self.json_data['downloaded_links']
 
-                self.dialog.state_label.setText(self.dialog.tr('Creating the download folder!'))
-            else:
-                self.dialog.state_label.setText(self.dialog.tr('Loading the exit folder!'))
-            # Menu path
-            self.menu_save_path = os.path.join(self.subfolder, 'Menu_{}'.format(self.bookname))
+        print('Download started!')
+        start_time = time.time()
+        self.dialog.check_novel_status()
+        contents_list = os.listdir(dialog.novel_save_path)
+        index_item = contents_list.index('{}'.format(self.bookname))
+        self.dialog.status_list[index_item] = 'downloading'
+        self.dialog.novel_status_list.clear()
+        self.dialog.novel_status_list.addItems(self.dialog.status_list)
 
-            # checking the exited chapters
-            if os.path.exists(self.menu_save_path):
-                exit_contents = linecache.getlines(self.menu_save_path)
-                self.exit_content = []
-                for i in range(len(exit_contents)):
-                    if i % 2 == 1:
-                        temp = exit_contents[i].split('\n')[0]
-                        self.exit_content.append(temp)
-                self.exit_content.sort()
-            else:
-                print('creating the menu file')
-
-            print('Download started!')
-            start_time = time.time()
-            self.dialog.check_novel_status()
-            contents_list = os.listdir(dialog.novel_save_path)
-            index_item = contents_list.index('{}'.format(self.bookname))
-            self.dialog.status_list[index_item] = 'downloading'
-            self.dialog.novel_status_list.clear()
-            self.dialog.novel_status_list.addItems(self.dialog.status_list)
-
-            # save index-file
-            index_file_path = os.path.join(self.subfolder, 'index_{}'.format(self.bookname))
-            with open(index_file_path, 'w') as f:
-                for chapter in self.chapter_links:
-                    f.write(chapter + '\n')
-                    f.flush()
-
-            # acceleration
-            for chapter_link in self.chapter_links:
+        # acceleration
+        # print('acceleration')
+        for chapter_link in self.chapter_links:
+            if not len(self.downloaded_links):
                 self.get_content_chapters(chapter_link=chapter_link)
-            # with Pool(4) as pool:
-            #     pool.starmap(self.get_content_chapters, zip(self.chapter_links))
+            else: 
+                if chapter_link not in self.downloaded_links:
+                    self.get_content_chapters(chapter_link=chapter_link)
+        
+        # if not len(self.downloaded_links):
+        #     self.chapter_links = list(set(self.chapter_links) - set(self.downloaded_links))
+        # if len(self.chapter_links):
+        #     with Pool(4) as pool:
+        #         pool.starmap(self.get_content_chapters, zip(self.chapter_links))
 
-            if os.path.exists(self.status_path):
-                os.remove(self.status_path)
-            
-            
-            self.dialog.state_label.setText(self.dialog.tr('Download successfully'))
-            self.dialog.check_novel_status()
+        # save data status in the json file
+        self.json_data['status'] = 'finished'
+        with open(f'{self.status_novel_json_path}', 'w') as f:
+            json.dump(self.json_data, f)
+        # downloaded status setting
+        self.dialog.state_label.setText(self.dialog.tr('Download successfully'))
+        self.dialog.check_novel_status()
 
-            end_time = time.time()
-            print('Time: {}'.format(end_time - start_time))
-
-        except Exception as e:
-            print('\n')
-            print(e)
-            logging.warning(traceback.format_exc())
+        end_time = time.time()
+        print(f'Time: {np.round((end_time - start_time), 2)}s')
 
     def get_content_chapters(self, chapter_link):
-        print('get_content_chapters is executed.')
+        print('get_content_chapters function is executed.')
         # if chapter_link in self.exit_content:
-        res = requests.get(chapter_link, headers=self.header, timeout=WAIT_TIME)
-        res.encoding = 'utf-8'
+        try:
+            res = requests.get(chapter_link, headers=self.header, timeout=WAIT_TIME)
+            res.encoding = 'utf-8'
+        except HTTPError as e:
+            return 0
 
         result = etree.HTML(res.text)
         title = result.xpath(self.chapter_title_analyze)[0]
@@ -471,27 +496,31 @@ class novel_spider:
             contents_next_url = self.host + contents_next_url
             self.next_chapter_links.append(contents_next_url)
 
-        title_path = os.path.join(self.subfolder, '{}.txt'.format(title))
+        title_path = os.path.join(self.single_novel_folder, f'{title}.txt')
         if not os.path.exists(title_path):
             f = open(title_path, 'w')
             f.close()
 
-        with open(title_path, 'a+', encoding="utf-8") as f, open(self.menu_save_path, 'a+', encoding='utf-8') as M:
+        # download the contents for each chapter
+        with open(title_path, 'a+', encoding="utf-8") as f:
             f.write('\n\n' + title + '\n\n')
             f.flush()
-
             for content in contents:
                 f.write('\n\t' + content + '\n')
                 f.flush()
-                # record menu of downloaded content
-            M.write('\t' + title + '\n' + chapter_link + '\n')
-            M.flush()
 
-        exit_number = len(os.listdir(self.subfolder))
+        # save data status in the json file
+        self.json_data['downloaded_links'].append(chapter_link)
+        self.json_data['chapter_names'].append(title)
+        with open(f'{self.status_novel_json_path}', 'w') as f:
+            json.dump(self.json_data, f)
 
-        self.dialog.progressbar.setValue(100 * exit_number / len(self.chapter_links+self.next_chapter_links))
-        self.dialog.state_label.setText(self.dialog.tr('\r{}\t{}%\t{}').format(self.bookname, format(
-            100 * (exit_number - 2) / len(self.chapter_links), '.2f'), title))
+        # update the Qprogressbar
+        exit_number = len(os.listdir(self.single_novel_folder))
+        self.dialog.progressbar.setValue(100 * (exit_number-1) / len(self.chapter_links))
+        self.dialog.state_label.setText(self.dialog.tr(
+            f'\r{self.bookname}\t{np.round(100*(exit_number-1)/len(self.chapter_links))}%\t{title}'))
+
 
 class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
 
@@ -503,8 +532,6 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
 
         # define parameters
         self.spider = None
-        # for multi-Qthread
-        self.work = WorkThread(self.book_name, self.book_source_combobox, self.state_label, self.book_list, self.spider)
         self.rank_url, self.book_update_url = "", ''
         self.rank_list, self.name_list, self.book_urls, self.status_list = [], [], [], []
         self.clipboard, self.url_list, self.music_name = None, None, None
@@ -546,6 +573,8 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
         self.Menu_button.clicked.connect(self.reader_button_menu)
         self.Next_button.clicked.connect(lambda: self.reader_button_changed_page('next'))
         self.preview_button.clicked.connect(lambda: self.reader_button_changed_page('back'))
+        # self.book_list.doubleClicked.connect(self.get_url_click)
+        self.listWidget_menu.clicked.connect(self.reader_menu_click)
 
         # music spider
         self.pushButton_music.clicked.connect(self.music_spider_search)
@@ -563,7 +592,8 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
                 self.status_music_label.setText(self.tr('waiting selection '))
 
     def music_spider_download(self):
-        qq_music_download(self.music_name, self.url_list, ui_test=True, dialog=dialog)
+        qq_music_download(self.music_name, self.url_list,
+                          ui_test=True, dialog=dialog)
 
     # continue to download novels
     def continue_download(self):
@@ -577,49 +607,44 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
         if not os.path.exists(self.novel_save_path):
             os.mkdir(self.novel_save_path)
         self.novel_name_list = os.listdir(self.novel_save_path)
-        self.exit_novel_list.clear() # exited novel list ui
+        self.exit_novel_list.clear()  # exited novel list ui
         self.exit_novel_list.addItems(self.novel_name_list)
         # status list ui
         self.novel_status_list.clear()
         self.status_list = []
+        # check for book status from json file
         for item in self.novel_name_list:
             path = os.path.join(self.novel_save_path, item)
-            # use a file named 'wait_for_download' to indicate the status of novels
-            path = os.path.join(path, 'wait_for_download')
-            if os.path.isfile(path):
-                self.status_list.append('waiting')
+            path = os.path.join(path, f'{item}_status.json')
+            if os.path.exists(path):
+                with open(f'{path}', 'r') as f:
+                    self.status_json = json.load(f)
+                status = self.status_json['status']
+                self.status_list.append(f'{status}')
             else:
-                self.status_list.append('downloaded')
+                self.status_list.append('unknown')
         self.novel_status_list.addItems(self.status_list)
 
     def reader_file(self):
         # reader
-        self.listWidget_menu.setVisible(False)
-        self.textBrowser.setVisible(True)
+        self.listWidget_menu.setVisible(False) # menu UI
+        self.textBrowser.setVisible(True)   # text UI
         self.textBrowser.clear()
 
         index_item = self.novel_status_list.currentRow()
         name = os.listdir(self.novel_save_path)[index_item]
         self.current_path = os.path.join(self.novel_save_path, name)
-        path_of_index = os.path.join(self.current_path, 'index_{}'.format(name))
-        path_of_menu = os.path.join(self.current_path, 'Menu_{}'.format(name))
+        # catch the json data
+        path_josn_book = os.path.join(self.current_path, f'{name}_status.json')
+        with open(f'{path_josn_book}', 'r') as f:
+            status_json = json.load(f)
 
-        linecache.clearcache()
-        menu_content = linecache.getlines(path_of_menu)
-        linecache.clearcache()
-        self.index_content = linecache.getlines(path_of_index)
-        self.title_list, self.url_list = [], []
-        for i in range(len(menu_content)):
-            if i % 2 == 0:
-                temp = menu_content[i].split('\t')[-1]
-                temp1 = temp.split('\n')[0]
-                self.title_list.append(temp1)
-            else:
-                self.url_list.append(menu_content[i])
+        self.index_content = status_json['chapter_links']
+        self.title_list, self.url_list = status_json['chapter_names'], status_json['chapter_links']
 
         self.current_chapter_index = 0
         chapter_name = self.title_list[self.url_list.index(self.index_content[self.current_chapter_index])]
-        current_path = os.path.join(self.current_path, '{}.txt'.format(chapter_name))
+        current_path = os.path.join(self.current_path, f'{chapter_name}.txt')
 
         linecache.clearcache()
         contents = linecache.getlines(current_path)
@@ -647,17 +672,39 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
                 content = self.title_list[self.url_list.index(link)]
                 self.listWidget_menu.addItem(content)
 
+    def reader_menu_click(self):
+        index_item = self.listWidget_menu.currentRow()
+        self.current_chapter_index = index_item
+        self.textBrowser.setVisible(True)
+        self.listWidget_menu.setVisible(False)
+        chapter_name = self.title_list[self.url_list.index(self.index_content[self.current_chapter_index])]
+        path = os.path.join(self.current_path, '{}.txt'.format(chapter_name))
+
+        linecache.clearcache()
+        contents = linecache.getlines(path)
+        self.state_label.setText(self.tr('Loading data ...'))
+        self.textBrowser.clear()
+        for content in contents:
+            if content == '\n':
+                pass
+            else:
+                self.textBrowser.append(content)
+        self.state_label.setText(self.tr('Data loaded '))
+        self.textBrowser.moveCursor(QTextCursor.Start)
+
     def reader_button_changed_page(self, order):
         # page change function
         if order == 'next':
             if self.index_content[self.current_chapter_index] == self.index_content[-1]:
-                QMessageBox.information(self, self.tr('chapter'), self.tr('the final chapter'))
+                QMessageBox.information(self, self.tr(
+                    'chapter'), self.tr('the final chapter'))
             else:
                 self.current_chapter_index += 1
 
         elif order == 'back':
             if self.index_content[self.current_chapter_index] == self.index_content[0]:
-                QMessageBox.information(self, self.tr('chapter'), self.tr('the first chapter'))
+                QMessageBox.information(self, self.tr(
+                    'chapter'), self.tr('the first chapter'))
             else:
                 self.current_chapter_index -= 1
 
@@ -739,7 +786,8 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
                 print(f'self.rank_url: {self.rank_url}')
 
                 self.rank_label.setText(self.tr("selected successfully ! "))
-                dic_data = qidian_content_rank(self.rank_list, ui_test=True, dialog=dialog)
+                dic_data = qidian_content_rank(
+                    self.rank_list, ui_test=True, dialog=dialog)
                 self.book_urls = dic_data['url']
                 self.book_update_url = dic_data['update_url']
                 self.genre_urls = dic_data['genre_url']
@@ -754,21 +802,21 @@ class LayoutDialog(QMainWindow, spider_UI_layout.Ui_MainWindow):
     def rank_spider(self):
         # get rank info
         print('rank_spider is executed')
-        self.name_list, self.rank_list = rank_info_qidian_url(ui_test=True, dialog=dialog)
+        self.name_list, self.rank_list = rank_info_qidian_url(
+            ui_test=True, dialog=dialog)
 
     # function to run spiders
     def search_spider(self):
         self.state_label.setText(self.tr("checking..."))
         novel_name = self.book_name.text()
         if novel_name:
-            # calling program in spider_without_UI,py
-            self.spider = novel_spider(novel_name, self.book_source_combobox.currentText(),
-                                                         dialog=dialog)
+
+            self.spider = novel_spider(novel_name, self.book_source_combobox.currentText(), dialog=dialog)
             self.work = WorkThread(novel_name, self.book_source_combobox, self.state_label, self.book_list, self.spider)
             self.work.spider_run()
 
         else:
-            QMessageBox.critical(self, self.tr("Error"), self.tr('Unvalid bookname'))
+            QMessageBox.critical(self, self.tr("Error"), self.tr('NO bookname'))
 
 
 class WorkThread(QThread):
@@ -802,7 +850,7 @@ class WorkThread(QThread):
             self.book_list.clear()
             self.book_list.addItems(self.spider.result_title_search)
         else:
-            self.state_label.setText(self.tr(f"No result ...  from {self.book_source_combobox.currentText()}"))
+            self.state_label.setText(self.tr("No result ...  from " + self.book_source_combobox.currentText()))
             self.book_list.clear()
 
     def get_url_click(self):
@@ -814,7 +862,6 @@ class WorkThread(QThread):
 
     def run(self):
         self.spider.spider_running()
-
 
 if __name__ == '__main__':
     app = QApplication()
