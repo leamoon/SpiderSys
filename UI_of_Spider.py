@@ -5,6 +5,7 @@ from urllib.error import HTTPError
 from PySide2.QtCore import QUrl, QThread
 from PySide2.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PySide2.QtGui import QTextCursor, QGuiApplication, QDesktopServices, QIcon
+from filelock import Timeout
 import spider_UI_layout
 import re
 import json
@@ -480,8 +481,18 @@ class novel_spider:
         try:
             res = requests.get(chapter_link, headers=self.header, timeout=WAIT_TIME)
             res.encoding = 'utf-8'
-        except HTTPError as e:
-            return 0
+        except requests.HTTPError as e:
+            print(e)
+            print('HTTPError. System will keep on working after 10s.')
+            self.spider_running()
+        except requests.Timeout:
+            time.sleep(10)
+            print('TimeoutError. System will keep on working after 10s.')
+            self.spider_running()
+        except Exception as e:
+            print(e)
+            print('Unknown Error. System will keep on working after 10s.')
+            self.spider_running()
 
         result = etree.HTML(res.text)
         title = result.xpath(self.chapter_title_analyze)[0]
