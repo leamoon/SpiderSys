@@ -1,13 +1,10 @@
-# a new GUI
-from calendar import c
 import sys
 import os
 import linecache
 from urllib.error import HTTPError
 from PySide2.QtCore import QUrl, QThread
 from PySide2.QtWidgets import QApplication, QMainWindow, QMessageBox
-from PySide2.QtGui import QTextCursor, QGuiApplication, QDesktopServices
-from sphinx import path
+from PySide2.QtGui import QTextCursor, QGuiApplication, QDesktopServices, QIcon
 import spider_UI_layout
 import re
 import json
@@ -19,9 +16,12 @@ import random
 from lxml import etree
 import urllib.parse as parse
 from urllib.request import urlretrieve
-from multiprocessing import Pool
 import numpy as np
+import PySide2
 
+dirname = os.path.dirname(PySide2.__file__)
+plugin_path = os.path.join(dirname, 'plugins', 'platforms')
+os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
 # hyper parameters
 novel_save_path = './Novels'  # default novel saved path
@@ -865,6 +865,7 @@ class WorkThread(QThread):
 
 if __name__ == '__main__':
     app = QApplication()
+    app.setWindowIcon(QIcon('spider.ico'))
 
     dialog = LayoutDialog()
     dialog.show()

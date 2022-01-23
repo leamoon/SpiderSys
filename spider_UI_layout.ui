@@ -75,7 +75,7 @@
          <string notr="true">background-color: rgb(255, 255, 238);</string>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <property name="movable">
          <bool>true</bool>
@@ -575,7 +575,7 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <widget class="QListWidget" name="content_list1">
+            <widget class="QListWidget" name="rank_book_name_list">
              <property name="font">
               <font>
                <family>Microsoft YaHei UI</family>
@@ -608,7 +608,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="content_list2">
+            <widget class="QListWidget" name="rank_author_list">
              <property name="maximumSize">
               <size>
                <width>108</width>
@@ -641,7 +641,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="content_list3">
+            <widget class="QListWidget" name="rank_genre_list">
              <property name="maximumSize">
               <size>
                <width>115</width>
@@ -674,7 +674,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="content_list4">
+            <widget class="QListWidget" name="rank_status_list">
              <property name="maximumSize">
               <size>
                <width>122</width>
@@ -707,7 +707,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="content_list5">
+            <widget class="QListWidget" name="rank_intro_list">
              <property name="font">
               <font>
                <family>Microsoft YaHei UI</family>
@@ -731,7 +731,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="content_list6">
+            <widget class="QListWidget" name="rank_newest_chapter_list">
              <property name="minimumSize">
               <size>
                <width>127</width>
@@ -833,7 +833,7 @@
               <string>click to get rank info</string>
              </property>
              <property name="text">
-              <string>Search</string>
+              <string>Check</string>
              </property>
              <property name="shortcut">
               <string>Return</string>

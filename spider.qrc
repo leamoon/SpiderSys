@@ -1,9 +1,0 @@
-<RCC>
-  <qresource prefix="Spider">
-    <file>novel_spider.svg</file>
-    <file>电脑,桌面,技术,imac,苹果,pc,设备,线性,扁平,填充,单色,简约,圆润.svg</file>
-    <file>OIP.png</file>
-    <file>mylogo.png</file>
-    <file>spider.ico</file>
-  </qresource>
-</RCC>
