@@ -8,10 +8,13 @@ Spiders consist of novel spider, music spider(broken) and movie spider(unfinishe
 
 ## update at 2022.01.21
 
-we transfer the project from pyqt to pyside2
+Update : we transfer the project from pyqt5 to pyside2
 
-a program which can search and download novels in 'biquge', 'luoxia', and 'fenghuochangye' websites with GUI interaction.
+Novel spider : a program which can search and download novels in 'biquge', 'luoxia', and 'fenghuochangye' websites with GUI interaction.
 
-The function of music spider doesnt work.
+Music spider : search and download songs from QQMusic.
 
-Please wait for next version.
+Movie spider : wait for coding.
+
+Please wait for next version. Any suggestions or bugs reports can be summit in Issue Section.
+Welcome any interesting improvement~
