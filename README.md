@@ -1,4 +1,4 @@
-# spider_test
+# SpiderSys
 
 Personal test for spiders in python
 
