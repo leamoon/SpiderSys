@@ -2,7 +2,7 @@
 
 Personal test for spiders in python
 
-Spiders consist of novel spider, music spider and movie spider.
+Spiders consist of novel spider, music spider(broken) and movie spider(unfinished).
 
 * Adding GUI interaction.
 
