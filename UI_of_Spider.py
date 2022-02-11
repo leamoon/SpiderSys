@@ -1,11 +1,9 @@
 import sys
 import os
 import linecache
-from urllib.error import HTTPError
 from PySide2.QtCore import QUrl, QThread
 from PySide2.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PySide2.QtGui import QTextCursor, QGuiApplication, QDesktopServices, QIcon
-from filelock import Timeout
 import spider_UI_layout
 import re
 import json
